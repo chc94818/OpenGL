@@ -1,0 +1,266 @@
+
+#include <stdlib.h>
+#include <glut.h>
+
+void init(void);
+void display(void);
+void reshape(int width, int height);
+void keyboard(unsigned char key, int x, int y);
+void idle(void);
+GLUquadricObj *quadricObj = gluNewQuadric();
+float color = 1.2f;
+float alpha = 0.4f;
+float length = 1.5f;
+static const float color_list[6][4] =
+{
+	//正立方體各面顏色
+	0.0f, color, color, alpha,
+	color, color, 0.0f, alpha,
+	color, 0.0f, color, alpha,
+	color, 0.0f, 0.0f, alpha,
+	0.0f, color, 0.0f, alpha,
+	0.0f, 0.0f, color, alpha
+};
+
+static const float vertex_list[][3] =
+{
+	//正立方體各頂點
+	-length, -length,  length,
+	length, -length,  length,
+	length,  length,  length,
+	-length,  length,  length,
+	-length, -length, -length,
+	length, -length, -length,
+	length,  length, -length,
+	-length,  length, -length
+};
+
+static const GLint index_list[6][4] =
+{
+	//正立方體面點配置
+
+	{ 5, 4, 7, 6 },
+	{ 4, 0, 3, 7 },
+	{ 0, 3, 2, 1 },
+	{ 1, 2, 6, 5 },
+	{ 4, 5, 1, 0 },
+	{ 3, 2, 6, 7 }
+};
+
+
+void DrawCube(void)
+{
+	//繪製正立方體
+	int i, j;
+
+	glBegin(GL_QUADS);
+	for (i = 0; i<6; ++i)
+	{
+		glColor4f(color_list[i][0], color_list[i][1], color_list[i][2], color_list[i][3]);
+		for (j = 0; j<4; ++j)
+		{
+			glVertex3fv(vertex_list[index_list[i][j]]);
+		}
+	}
+	glEnd();
+}
+
+
+void DrawPen(void)
+{
+	//繪製筆
+
+	//繪製筆桿
+	glPushMatrix();
+	glRotatef(90, 1, 0, 0);
+	gluCylinder(quadricObj, 0.1f, 0.1f, 2.5f, 32, 32);
+	glPopMatrix();
+
+	//繪製筆尖
+	glPushMatrix();
+	glRotatef(90, 1, 0, 0);
+	glTranslatef(0, 0, -0.3f);
+	gluCylinder(quadricObj, 0.0f, 0.1f, 0.3f, 32, 32);
+	glPopMatrix();
+	glEnd();
+}
+
+void DrawApple(void)
+{
+	//繪製蘋果
+
+	//繪製蘋果本體
+	glPushMatrix();
+	gluSphere(quadricObj, 1, 32, 32);
+	glPopMatrix();
+
+	//繪製蘋果梗
+	glPushMatrix();
+	glTranslatef(0, 1.5, 0.0f);
+	glRotatef(90, 1, 0, 0);
+	gluCylinder(quadricObj, 0.0f, 0.075f, 0.5f, 32, 32);
+	glPopMatrix();
+
+	//繪製蘋果葉
+	glPushMatrix();
+	glTranslatef(0.3, 1.4, 0.0f);
+	glRotatef(-35, 0, 0, 1);
+	glRotatef(90, 1, 0, 0);
+	gluCylinder(quadricObj, 0.075f, 0.0f, 0.5f, 32, 32);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0.3, 1.4, 0.0f);
+	glRotatef(-35, 0, 0, 1);
+	glRotatef(90, 1, 0, 0);
+	gluDisk(quadricObj, 0.0, 0.075, 26, 13);
+	glPopMatrix();
+}
+int main(int argc, char *argv[])
+{
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
+	glutCreateWindow("OpenGL Assignment 1");
+	glutReshapeWindow(512, 512);
+	init();
+	glutReshapeFunc(reshape);
+	glutDisplayFunc(display);
+	glutIdleFunc(idle);
+	glutKeyboardFunc(keyboard);
+	glDisable(GL_CULL_FACE);
+	glutMainLoop();
+	return 0;
+}
+
+void init(void) {
+	GLfloat position[] = { 1.0, 1.0, 5.0, 0.0 };
+	glLightfv(GL_LIGHT0, GL_POSITION, position);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_DEPTH_TEST);
+}
+static float rotates = 0;
+static float rlRotates = 0;
+static bool rl = true;
+static int times = 0;
+static int animation = 0;
+static float speed = 0.002f;
+static float disp = 0;
+
+void display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glMatrixMode(GL_MODELVIEW);      //現在是模型矩陣
+	glLoadIdentity();
+
+	gluLookAt(0.0, 0.0, 12.0, /* Eye pos XYZ */
+		0.0, 0.0, 0.0, /* Target pos XYZ */
+		0.0, 1.0, 0.0); /* Up vector */
+
+						//時間控制
+	times++;
+	if (times > 120)
+	{
+		times = 0;
+	}
+
+	//旋轉角度控制
+	if (times % 120 == 0)
+	{
+		rotates++;
+		if (rl)rlRotates++;
+		else rlRotates--;
+	}
+	if (rlRotates > 20) rl = false;
+	if (rlRotates < -20) rl = true;
+
+	//繪製正立方體
+	glDisable(GL_LIGHTING);
+	glPushMatrix();
+	glTranslatef(0, 1.5, -2);
+	glRotatef(rotates, 1, 0, 0);
+	glRotatef(rotates, 0, 1, 0);
+	DrawCube();
+	glPopMatrix();
+	glEnable(GL_LIGHTING);
+
+
+
+
+	//動畫控制
+	if (animation) {
+		animation--;
+		if (animation < 2580) {
+			speed = 0;
+		}
+		disp += speed;
+		glPushMatrix();
+		glTranslatef(-2 + disp, -1.5, 0);
+		//繪製筆
+		glRotatef(-90, 0, 0, 1);
+		glTranslatef(0, 1, 0);
+		DrawPen();
+		glPopMatrix();
+
+		//繪製蘋果
+		glPushMatrix();
+		glTranslatef(2 - disp, -1.65, 0);
+		glRotatef(rotates * 5, 0, 1, 0);
+		DrawApple();
+		glPopMatrix();
+	}
+	else {
+		glPushMatrix();
+		glTranslatef(-2, -1.5, 0);
+		//繪製筆
+		glRotatef(rlRotates, 0, 0, 1);
+		glTranslatef(0, 1, 0);
+		DrawPen();
+		glPopMatrix();
+
+		//繪製蘋果
+		glPushMatrix();
+		glTranslatef(2, -1.65, 0);
+		glRotatef(rotates * 2, 0, 1, 0);
+		DrawApple();
+		glPopMatrix();
+
+	}
+
+	glutSwapBuffers();
+
+}
+void reshape(int width, int height)
+{
+	glViewport(0, 0, width, height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(45.0, (GLfloat)width / (GLfloat)height, 0.1, 100.0);
+}
+
+void keyboard(unsigned char key, int x, int y) {
+	switch (key) {
+	case 13:
+	{   //enter
+		disp = 0;
+		speed = 0.005f;
+		animation = 3000;
+		break;
+	}
+	case 27:
+	{   //ESC
+		exit(0);
+		break;
+	}
+	default:
+	{
+		break;
+	}
+	}
+}
+
+void idle(void)
+{
+	glutPostRedisplay();
+}
